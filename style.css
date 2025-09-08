@@ -47,14 +47,12 @@ body {
   opacity: 0;
   transform: translateY(32px) scale(.97);
 }
-
 @keyframes riseIn {
   from { opacity: 0; transform: translateY(32px) scale(.97); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 /* ---------- Hover bounce ---------- */
-/* เด้งนิด ๆ ตอนโฮเวอร์ และค้างยกนิด ๆ ระหว่างวางเมาส์ */
 @keyframes hoverBounce {
   0%   { transform: translateY(0)    scale(1);    }
   60%  { transform: translateY(-6px) scale(1.06); }
@@ -64,3 +62,32 @@ body {
 .item.text:hover {
   animation: hoverBounce 380ms cubic-bezier(.34,1.56,.64,1) forwards;
 }
+
+/* ---------- iMessage-like bubble (สำหรับ island-4) ---------- */
+.bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;                  /* เหนือไอคอน */
+  transform: translate(-50%, -8px);
+  padding: 10px 14px;
+  background: #eef1f5;           /* เทาอ่อนแบบ iMessage */
+  color: #111;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  white-space: nowrap;
+  pointer-events: none;          /* ไม่บังการโฮเวอร์ของไอคอน */
+  opacity: 0;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 3;                    /* สูงกว่าไอคอน */
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #eef1f5;     /* หางกล่องคำพูด */
+}
+/* โชว์เมื่อโฮเวอร์ที่ island-4 */
+#i4:hover .bubble { opacity: 1; transform: translate(-50%, -12px); }
