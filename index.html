@@ -1,1 +1,33 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Explorer Guide</title>
 
+  <!-- ฟอนต์หัวเรื่องแบบตัวอย่าง -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <!-- แคนวาสสีขาว -->
+  <div id="canvas">
+    <div id="stage" aria-label="free-canvas area"></div>
+
+    <!-- แถบเครื่องมือ -->
+    <div class="toolbar">
+      <button id="lockBtn"  class="btn">🔓 Edit mode</button>
+      <button id="exportBtn" class="btn">💾 Export layout</button>
+      <button id="importBtn" class="btn ghost">⬆︎ Import</button>
+      <button id="resetBtn"  class="btn ghost">↺ Reset</button>
+      <button id="gridBtn"   class="btn ghost"># Grid</button>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
