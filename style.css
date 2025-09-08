@@ -1,72 +1,170 @@
-:root{
-  --ink:#111;
-  --muted:#9aa4b2;
-  --shadow:0 10px 24px rgba(0,0,0,.10);
-}
+// ================= Canvas playground (subset icons) =================
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  background:#fff; /* ขาวโล่ง */
-  color:var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-}
+const canvas = document.getElementById('canvas');
+const stage  = document.getElementById('stage');
 
-/* พื้นที่แคนวาส */
-#canvas{
-  width:min(1200px,96vw);
-  height:min(78vh,760px);
-  margin: 28px auto 36px;
-  position:relative;
-  background:#fff;
-  border-radius:12px;
-  overflow:hidden;
-}
+const IS_MOBILE   = window.matchMedia('(max-width: 640px)').matches;
+const WHEEL_STEP  = 0.001;
+const SCALE_MIN   = 0.35, SCALE_MAX = 2.5;
 
-/* เปิด/ปิดกริดช่วยจัดวาง */
-#canvas.grid::before{
-  content:"";
-  position:absolute; inset:0;
-  background:
-    linear-gradient(to right, rgba(0,0,0,.05) 1px, transparent 1px) 0 0/40px 40px,
-    linear-gradient(to bottom, rgba(0,0,0,.05) 1px, transparent 1px) 0 0/40px 40px;
-  pointer-events:none;
-}
+/* ใช้เฉพาะไฟล์: 8,9,7,1,4,3,11,10,13 */
+const ICONS = [
+  { id:'title', type:'text', text:'Explorer Guide', x: 500, y: -40, fontSize: 64 },
 
-#stage{ position:absolute; inset:0; }
+  { id:'i8',  src:'assets/icon/Island-8.png',  w:200, x: 420, y:  70 },
+  { id:'i9',  src:'assets/icon/Island-9.png',  w:200, x: 560, y: 260 },
+  { id:'i7',  src:'assets/icon/Island-7.png',  w:220, x: 710, y: 110 },
+  { id:'i1',  src:'assets/icon/Island-1.png',  w:200, x: 260, y: 120 },
+  { id:'i4',  src:'assets/icon/Island-4.png',  w:220, x: 480, y: 150 },
+  { id:'i3',  src:'assets/icon/Island-3.png',  w:210, x: 350, y:  70 },
+  { id:'i11', src:'assets/icon/Island-11.png', w:220, x: 330, y: 340 },
+  { id:'i10', src:'assets/icon/Island-10.png', w:210, x: 820, y: 250 },
+  { id:'i13', src:'assets/icon/Island-13.png', w:240, x: 160, y: 380 },
+];
 
-/* ชิ้น (รูป/ตัวอักษร) */
-.item{
-  position:absolute;
-  user-select:none;
-  cursor:grab;
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,.15));
-  transition: transform .08s ease;
-}
-.item:active{ cursor:grabbing; transform:scale(1.015); }
-.item img{ display:block; width:100%; height:auto; -webkit-user-drag: none; }
+/* -------- build DOM -------- */
+const els = [];
+const loads = [];
 
-/* ชิ้นข้อความ (ลากได้ ปรับขนาดฟอนต์ได้) */
-.item.text{
-  font-family:"Playfair Display", serif;
-  font-weight:700;
-  color:#111;
-  white-space:nowrap;
-  filter:none; /* ตัวอักษรไม่ต้องมีเงาตกกระทบ */
-}
+ICONS.forEach(item => {
+  let el;
+  if (item.type === 'text') {
+    el = document.createElement('div');
+    el.className = 'draggable text entering';
+    el.textContent = item.text;
+    el.style.fontSize = (item.fontSize || 56) + 'px';
+  } else {
+    el = document.createElement('img');
+    el.src = item.src;
+    el.className = 'draggable entering';
+    // preload promise
+    loads.push(new Promise(res => { if (el.complete) res(); else { el.onload = res; el.onerror = res; } }));
+  }
+  el.id = item.id;
+  el.style.left = item.x + 'px';
+  el.style.top  = item.y + 'px';
+  if (item.w && item.type !== 'text') el.style.width = item.w + 'px';
+  el.draggable = false;
+  el.addEventListener('dragstart', e => e.preventDefault());
+  stage.appendChild(el);
+  els.push(el);
+});
 
-/* โหมดล็อก = ห้ามลาก */
-.locked .item{ cursor:pointer; }
+/* -------- zoom / center -------- */
+let scale = IS_MOBILE ? 0.7 : 0.6;
+let originX = 0, originY = 0;
+function applyTransform(){ stage.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`; }
+applyTransform();
 
-/* Toolbar */
-.toolbar{
-  position:absolute; left:16px; bottom:16px;
-  display:flex; gap:8px; flex-wrap:wrap;
+function centerStageOnContent() {
+  if (!els.length) return;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  els.forEach(el => {
+    const l = el.offsetLeft, t = el.offsetTop, w = el.offsetWidth, h = el.offsetHeight;
+    minX = Math.min(minX, l);   minY = Math.min(minY, t);
+    maxX = Math.max(maxX, l+w); maxY = Math.max(maxY, t+h);
+  });
+  const cx = (minX + maxX)/2, cy = (minY + maxY)/2;
+  const viewW = canvas.clientWidth, viewH = canvas.clientHeight;
+  originX = (viewW/2) - (cx * scale);
+  originY = (viewH/2) - (cy * scale);
+  applyTransform();
 }
-.btn{
-  border:0; background:#111; color:#fff;
-  padding:10px 14px; border-radius:10px; font-weight:600;
-  cursor:pointer; box-shadow: var(--shadow);
+Promise.all(loads).then(centerStageOnContent);
+
+// wheel zoom (โฟกัสตามเมาส์)
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const prev = scale;
+  const delta = -e.deltaY * WHEEL_STEP;
+  scale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, scale + delta));
+  const r = stage.getBoundingClientRect();
+  const mx = (e.clientX - r.left) / prev;
+  const my = (e.clientY - r.top ) / prev;
+  originX = e.clientX - mx * scale;
+  originY = e.clientY - my * scale;
+  applyTransform();
+}, { passive:false });
+
+/* -------- drag & resize (handles) -------- */
+let selection=null,resizing=null, active=null, offX=0, offY=0;
+
+function showSelection(el){
+  hideSelection();
+  if (el.classList.contains('text')) {   // มีกรอบให้จับปรับได้เหมือนกัน
+    el.style.filter = 'none';
+  }
+  selection=document.createElement('div');
+  selection.className='kw-selection';
+  ['nw','ne','sw','se'].forEach(pos=>{
+    const h=document.createElement('div');
+    h.className='kw-handle'; h.dataset.pos=pos;
+    h.addEventListener('pointerdown', ev=>startResize(ev,el,pos));
+    selection.appendChild(h);
+  });
+  stage.appendChild(selection);
+  updateSelection(el);
 }
-.btn.ghost{ background:#eef1f5; color:#111; }
+function updateSelection(el){
+  if(!selection) return;
+  const s=stage.getBoundingClientRect(), r=el.getBoundingClientRect();
+  const k = 1/scale;
+  selection.style.left  = (r.left - s.left)*k + 'px';
+  selection.style.top   = (r.top  - s.top )*k + 'px';
+  selection.style.width =  r.width *k + 'px';
+  selection.style.height=  r.height*k + 'px';
+}
+function hideSelection(){ if(selection) selection.remove(); selection=null; }
+
+function startResize(e,el,pos){
+  e.stopPropagation(); e.preventDefault();
+  const r=el.getBoundingClientRect(), s=stage.getBoundingClientRect();
+  resizing={el,pos,startX:e.clientX,startY:e.clientY,startW:r.width,startH:r.height,startL:(r.left-s.left)/scale,startT:(r.top-s.top)/scale};
+}
+function onResizeMove(e){
+  if(!resizing) return;
+  const {el,pos,startX,startY,startW,startH,startL,startT}=resizing;
+  let dx=(e.clientX-startX)/scale, dy=(e.clientY-startY)/scale;
+  let newW=startW,newH=startH,newL=startL,newT=startT;
+  if(pos.includes("e")) newW=startW+dx;
+  if(pos.includes("s")) newH=startH+dy;
+  if(pos.includes("w")){ newW=startW-dx; newL=startL+dx; }
+  if(pos.includes("n")){ newH=startH-dy; newT=startT+dy; }
+  newW=Math.max(40,newW); newH=Math.max(40,newH);
+  el.style.left=newL+'px'; el.style.top=newT+'px'; el.style.width=newW+'px'; el.style.height=newH+'px';
+  updateSelection(el);
+}
+function endResize(){ resizing=null; }
+
+stage.addEventListener('pointerdown', e => {
+  const el = e.target.closest('#stage > .draggable');
+  if (!el) { hideSelection(); return; }
+  // หยุดแอนิเมชัน entrance ของชิ้นที่แตะ
+  el.getAnimations?.().forEach(a => a.cancel());
+  el.classList.remove('entering');
+
+  active = el;
+  const r = el.getBoundingClientRect();
+  offX = (e.clientX - r.left)/scale;
+  offY = (e.clientY - r.top )/scale;
+  showSelection(el);
+  el.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove', e => {
+  if (resizing) return onResizeMove(e);
+  if (!active) return;
+  const s=stage.getBoundingClientRect();
+  const x = (e.clientX - s.left)/scale - offX;
+  const y = (e.clientY - s.top )/scale - offY;
+  active.style.left = x + 'px';
+  active.style.top  = y + 'px';
+  updateSelection(active);
+});
+stage.addEventListener('pointerup', e => {
+  if (resizing){ endResize(); return; }
+  if (!active) return;
+  active.releasePointerCapture?.(e.pointerId);
+  active = null;
+});
+
+window.addEventListener('resize', centerStageOnContent);
