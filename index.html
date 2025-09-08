@@ -5,55 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Explorer Guide</title>
 
-  <!-- Google Font: Source Serif Pro -->
+  <!-- Google Font: DM Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div id="canvas">
-    <div id="stage" aria-label="playground"></div>
-  </div>
-
-  <div class="hint" role="note">drag + resize (handles) • wheel = zoom canvas</div>
-
+  <div id="stage" aria-label="locked-canvas"></div>
   <script src="./script.js"></script>
-
-  <!-- Entrance animation (cine, once, no flicker) -->
-  <script>
-    (function () {
-      const SELECTOR = '#stage > .entering, #stage img.entering, #stage .text.entering';
-      const STAGGER  = 140;
-      const DURATION = 1200;
-      const EASING   = 'cubic-bezier(.16,.84,.16,1)';
-
-      function animateOnce(nodes){
-        nodes.forEach((el, i) => {
-          el.getAnimations?.().forEach(a => a.cancel());
-          const anim = el.animate(
-            [{ opacity:0, transform:'translateY(48px) scale(.92)' },
-             { opacity:1, transform:'translateY(0) scale(1)' }],
-            { duration:DURATION, delay:i*STAGGER, easing:EASING, fill:'forwards' }
-          );
-          anim.addEventListener('finish', () => { try{anim.commitStyles();anim.cancel();}catch{} el.classList.remove('entering'); });
-        });
-      }
-
-      window.addEventListener('load', () => {
-        const nodes = Array.from(document.querySelectorAll(SELECTOR));
-        if (nodes.length) animateOnce(nodes);
-
-        // หากผู้ใช้คลิก/ลากก่อนจบแอนิเมชัน ให้ยกเลิกทันที
-        document.addEventListener('pointerdown', (e) => {
-          const el = e.target.closest('#stage > *'); if (!el) return;
-          el.getAnimations?.().forEach(a => a.cancel());
-          el.classList.remove('entering');
-          el.style.opacity = '1'; el.style.transform = 'translateY(0) scale(1)';
-        }, { capture:true });
-      }, { once:true });
-    })();
-  </script>
 </body>
 </html>

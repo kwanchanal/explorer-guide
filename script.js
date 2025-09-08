@@ -1,66 +1,68 @@
-// ====== Drag-only canvas (no save/zoom) ======
+// Layout LOCKED + Entrance (stagger) + Hover bounce
 window.addEventListener('load', () => {
   const stage = document.getElementById('stage');
 
-  // ใช้เฉพาะ: 8,9,7,1,4,3,11,10,13 + ข้อความ Explorer Guide
-  const ITEMS = [
-    { id:'title', type:'text', text:'Explorer Guide', x: 340, y: 30, fs: 64 },
+  // ตำแหน่งคงที่ (จากเลย์เอาต์ที่ล็อกไว้)
+  const LAYOUT = [
+    { id: "title", type: "text", text: "Explorer Guide", x: 506, y: 66,  fs: 64 },
 
-    { id:'i8',  type:'img', src:'assets/icon/Island-8.png',  x: 440, y: 120, w: 210 },
-    { id:'i9',  type:'img', src:'assets/icon/Island-9.png',  x: 580, y: 290, w: 200 },
-    { id:'i7',  type:'img', src:'assets/icon/Island-7.png',  x: 730, y: 150, w: 210 },
-    { id:'i1',  type:'img', src:'assets/icon/Island-1.png',  x: 270, y: 140, w: 190 },
-    { id:'i4',  type:'img', src:'assets/icon/Island-4.png',  x: 500, y: 170, w: 210 },
-    { id:'i3',  type:'img', src:'assets/icon/Island-3.png',  x: 360, y: 100, w: 200 },
-    { id:'i11', type:'img', src:'assets/icon/Island-11.png', x: 340, y: 370, w: 220 },
-    { id:'i10', type:'img', src:'assets/icon/Island-10.png', x: 820, y: 270, w: 210 },
-    { id:'i13', type:'img', src:'assets/icon/Island-13.png', x: 170, y: 410, w: 230 },
+    { id: "i8",  type: "img", src: "assets/icon/island-8.png",  x: 634, y:  80, w: 210 },
+    { id: "i9",  type: "img", src: "assets/icon/island-9.png",  x: 762, y: 353, w: 200 },
+    { id: "i7",  type: "img", src: "assets/icon/island-7.png",  x: 768, y: 181, w: 210 },
+    { id: "i1",  type: "img", src: "assets/icon/island-1.png",  x: 490, y: 162, w: 190 },
+    { id: "i4",  type: "img", src: "assets/icon/island-4.png",  x: 341, y: 228, w: 210 },
+    { id: "i3",  type: "img", src: "assets/icon/island-3.png",  x: 622, y: 249, w: 200 },
+    { id: "i11", type: "img", src: "assets/icon/island-11.png", x: 485, y: 336, w: 220 },
+    { id: "i10", type: "img", src: "assets/icon/island-10.png", x: 907, y: 270, w: 210 },
+    { id: "i13", type: "img", src: "assets/icon/island-13.png", x: 254, y: 401, w: 230 },
   ];
 
-  // วาดชิ้นงาน (ให้ข้อความอยู่หลังสุดด้วย z-index)
-  ITEMS.forEach(addItem);
-
-  function addItem(it) {
+  // วาด + ใส่คลาส entering เพื่อเตรียมแอนิเมชัน
+  const created = [];
+  LAYOUT.forEach(it => {
     const el = document.createElement('div');
     el.id = it.id;
-    el.className = 'item ' + (it.type === 'text' ? 'text' : 'icon');
-    el.style.left = (it.x || 40) + 'px';
-    el.style.top  = (it.y || 40) + 'px';
+    el.className = 'item is-entering ' + (it.type === 'text' ? 'text' : 'icon');
+    el.style.left = it.x + 'px';
+    el.style.top  = it.y + 'px';
 
     if (it.type === 'text') {
       el.textContent = it.text || 'Explorer Guide';
       el.style.fontSize = (it.fs || 56) + 'px';
     } else {
-      el.style.width = (it.w || 200) + 'px';
+      el.style.width = it.w + 'px';
       el.innerHTML = `<img src="${it.src}" alt="">`;
-      const img = el.querySelector('img');
-      img.draggable = false;
-      img.addEventListener('dragstart', e => e.preventDefault());
+      el.querySelector('img')?.addEventListener('error', () =>
+        console.error('Image not found:', it.src)
+      );
     }
 
     stage.appendChild(el);
-    makeDraggable(el);
-  }
+    created.push(el);
+  });
 
-  // ลากเลื่อน (รองรับเมาส์/ทัชผ่าน Pointer Events)
-  function makeDraggable(el) {
-    let offsetX = 0, offsetY = 0;
-
-    el.addEventListener('pointerdown', (e) => {
-      const rect = el.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-      el.setPointerCapture(e.pointerId);
+  // Staggered entrance (Web Animations API)
+  const DURATION = 900;    // ความยาวต่อชิ้น
+  const STEP     = 110;    // หน่วงแต่ละชิ้น
+  created.forEach((el, i) => {
+    const anim = el.animate(
+      [
+        { opacity: 0, transform: 'translateY(32px) scale(.97)' },
+        { opacity: 1, transform: 'translateY(0) scale(1)' }
+      ],
+      {
+        duration: DURATION,
+        delay: i * STEP,
+        easing: 'cubic-bezier(.2,.9,.2,1)',
+        fill: 'forwards'
+      }
+    );
+    anim.addEventListener('finish', () => {
+      // set ค่าไว้แล้วลบคลาสเพื่อป้องกัน flicker
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0) scale(1)';
+      el.classList.remove('is-entering');
+      try { anim.commitStyles(); anim.cancel(); } catch {}
     });
-
-    el.addEventListener('pointermove', (e) => {
-      if (!el.hasPointerCapture(e.pointerId)) return;
-      el.style.left = (e.clientX - offsetX) + 'px';
-      el.style.top  = (e.clientY - offsetY) + 'px';
-    });
-
-    el.addEventListener('pointerup', (e) => {
-      el.releasePointerCapture?.(e.pointerId);
-    });
-  }
+  });
 });
